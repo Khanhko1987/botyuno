@@ -1,0 +1,17 @@
+{
+  "name": "yuno-minecraft-bot",
+  "version": "2.1.0",
+  "description": "Yuno Babybu Minecraft Mineflayer Bot Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --expose-gc index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mineflayer": "^4.39.0",
+    "socks": "^2.8.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
