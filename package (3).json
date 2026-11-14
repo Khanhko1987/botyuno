@@ -1,0 +1,14 @@
+{
+  "name": "kiru-bot",
+  "version": "1.0.0",
+  "description": "Minecraft Mineflayer Bot with Web Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --expose-gc index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mineflayer": "^4.20.1",
+    "socks": "^2.8.3"
+  }
+}
