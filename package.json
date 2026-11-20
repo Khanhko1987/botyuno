@@ -1,7 +1,7 @@
 {
-  "name": "kiru-bot",
+  "name": "yuno-babybuu",
   "version": "1.0.0",
-  "description": "Minecraft Mineflayer Bot with Web Dashboard",
+  "description": "Yuno BabyBuu Minecraft Mineflayer Bot with Web Dashboard",
   "main": "index.js",
   "scripts": {
     "start": "node --expose-gc index.js"
