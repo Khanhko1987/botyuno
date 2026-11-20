@@ -11,7 +11,7 @@ app.use(express.json());
 // ÉP MÚI GIỜ VIỆT NAM TOÀN HỆ THỐNG
 process.env.TZ = 'Asia/Ho_Chi_Minh';
 
-let BOT_USERNAME = process.env.BOT_USERNAME || 'Kiru Đẹp Trai';
+let BOT_USERNAME = process.env.BOT_USERNAME || 'Yuno Đẹp Trai';
 let BOT_PASSWORD = process.env.BOT_PASSWORD || 'YourPasswordHere';
 let BOT_HOST = process.env.BOT_HOST || 'mc.example.com';
 let BOT_PORT = parseInt(process.env.BOT_PORT) || 25565;
@@ -29,7 +29,10 @@ const toggles = {
   attackRight: false,
   skill1: false,
   skill2: false,
-  skill3: false
+  skill3: false,
+  congphap1: false,
+  congphap2: false,
+  congphap3: false
 };
 
 // Cấu hình tốc độ click chuột (tối thiểu 0.1s = 100ms)
@@ -66,7 +69,8 @@ let quylayInterval = null;
 let ngoiInterval = null;
 let attackLeftInterval = null;
 let attackRightInterval = null;
-let skillLoopInterval = null;
+let skillLoopInterval = null; // Giữ tương thích nếu nơi khác còn tham chiếu
+let skillIntervals = {}; // Timer riêng cho từng skill, không dùng chung một chu kỳ
 let hotbarLoopInterval = null;
 
 let isAwaitingResponse = false;
@@ -188,9 +192,12 @@ app.get('/api/toggle/:feature', (req, res) => {
       if (feat === 'quylay') safeChat('/quylay');
       if (feat === 'dinhthan') safeChat('/dinhthan');
       if (feat === 'quanghao') safeChat('/quanghao');
-      if (feat === 'skill1') safeChat('/kinang_1');
-      if (feat === 'skill2') safeChat('/kinang_2');
-      if (feat === 'skill3') safeChat('/kinang_3');
+      if (feat === 'skill1' && toggles[feat]) safeChat('/kinang_1');
+      if (feat === 'skill2' && toggles[feat]) safeChat('/kinang_2');
+      if (feat === 'skill3' && toggles[feat]) safeChat('/kinang_3');
+      if (feat === 'congphap1' && toggles[feat]) safeChat('/fightingskill_1');
+      if (feat === 'congphap2' && toggles[feat]) safeChat('/fightingskill_2');
+      if (feat === 'congphap3' && toggles[feat]) safeChat('/fightingskill_3');
 
       restartLoops();
     }
@@ -281,18 +288,18 @@ app.get('/', (req, res) => {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <title>Kiru Đẹp Trai - Control Panel</title>
+      <title>Yuno BabyBuu - Control Panel</title>
       <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
       <style>
         :root {
           --card-bg: rgba(10, 14, 26, 0.82);
-          --accent-cyan: #38bdf8;
-          --accent-pink: #f43f5e;
-          --accent-purple: #c084fc;
+          --accent-cyan: #c084fc;
+          --accent-pink: #a855f7;
+          --accent-purple: #d8b4fe;
           --accent-green: #4ade80;
           --accent-yellow: #fbbf24;
-          --border: rgba(56, 189, 248, 0.35);
-          --glow: 0 0 15px rgba(56, 189, 248, 0.25);
+          --border: rgba(168, 85, 247, 0.42);
+          --glow: 0 0 18px rgba(168, 85, 247, 0.28);
         }
         * { box-sizing: border-box; }
         body {
@@ -306,18 +313,18 @@ app.get('/', (req, res) => {
         }
         .toggle-ui-btn {
           position: fixed; bottom: 20px; right: 20px; z-index: 9999;
-          padding: 12px 20px; background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-          color: #fff; font-weight: 800; border: 2px solid #38bdf8; border-radius: 30px;
-          box-shadow: 0 0 20px rgba(56, 189, 248, 0.6); cursor: pointer; font-size: 0.95rem;
+          padding: 12px 20px; background: linear-gradient(135deg, #7e22ce, #c084fc);
+          color: #fff; font-weight: 800; border: 2px solid #c084fc; border-radius: 30px;
+          box-shadow: 0 0 20px rgba(168, 85, 247, 0.6); cursor: pointer; font-size: 0.95rem;
           display: flex; align-items: center; gap: 8px; transition: transform 0.2s;
         }
         .toggle-ui-btn:hover { transform: scale(1.05); }
         .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid var(--border); margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
         h1 {
           font-family: 'Orbitron', sans-serif; font-size: 1.8rem; margin: 0;
-          background: linear-gradient(90deg, #38bdf8, #f43f5e, #c084fc);
+          background: linear-gradient(90deg, #a855f7, #d8b4fe, #7e22ce);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          text-shadow: 0 0 15px rgba(244, 63, 94, 0.5);
+          text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
         }
         .container { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
         .card { background: var(--card-bg); backdrop-filter: blur(14px); padding: 16px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--glow); margin-bottom: 16px; }
@@ -329,23 +336,23 @@ app.get('/', (req, res) => {
         .status-item { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.12); padding: 8px 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 2px; }
         .status-item .label { font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
         .status-item .value { font-size: 0.85rem; font-weight: 700; color: #f8fafc; word-break: break-all; }
-        .chat-box { background: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 10px; font-family: monospace; height: 260px; overflow-y: auto; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.8rem; }
+        .chat-box { background: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 10px; font-family: monospace; height: 260px; overflow-y: auto; color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 0.8rem; }
         .error-box { background: rgba(20, 5, 5, 0.75); padding: 10px; border-radius: 10px; font-family: monospace; height: 180px; overflow-y: auto; color: #f87171; border: 1px solid rgba(244, 63, 94, 0.4); font-size: 0.8rem; }
-        .kiru-box { background: rgba(15, 23, 15, 0.75); padding: 10px; border-radius: 10px; font-family: monospace; height: 150px; overflow-y: auto; color: #facc15; border: 1px solid rgba(250, 204, 21, 0.4); font-size: 0.8rem; }
+        .mention-box { background: rgba(15, 23, 15, 0.75); padding: 10px; border-radius: 10px; font-family: monospace; height: 150px; overflow-y: auto; color: #facc15; border: 1px solid rgba(250, 204, 21, 0.4); font-size: 0.8rem; }
         .input-group { display: flex; gap: 8px; margin-top: 8px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         input[type="text"], input[type="password"], input[type="number"] {
           width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2);
           background: rgba(0, 0, 0, 0.6); color: white; outline: none; font-size: 0.85rem;
         }
-        input:focus { border-color: var(--accent-pink); box-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
-        button { padding: 9px 15px; background: linear-gradient(135deg, #e11d48, #be123c); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; white-space: nowrap; font-size: 0.85rem; }
-        button:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(225, 29, 72, 0.5); }
+        input:focus { border-color: var(--accent-purple); box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+        button { padding: 9px 15px; background: linear-gradient(135deg, #7e22ce, #9333ea); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; white-space: nowrap; font-size: 0.85rem; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(147, 51, 234, 0.5); }
         .btn-stop { background: linear-gradient(135deg, #dc2626, #991b1b) !important; }
         .btn-start { background: linear-gradient(135deg, #16a34a, #15803d) !important; }
         .btn-warning { background: linear-gradient(135deg, #d97706, #b45309) !important; }
         .btn-purple { background: linear-gradient(135deg, #9333ea, #6b21a8) !important; }
-        .btn-save { background: linear-gradient(135deg, #0284c7, #0369a1) !important; width: 100%; margin-top: 8px; }
+        .btn-save { background: linear-gradient(135deg, #7e22ce, #6b21a8) !important; width: 100%; margin-top: 8px; }
         label { font-size: 0.78rem; color: #cbd5e1; display: block; margin-bottom: 4px; font-weight: 600; }
         .btn-group-responsive { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
         .hotbar-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-top: 10px; }
@@ -386,7 +393,7 @@ app.get('/', (req, res) => {
         ⚙️ <span id="toggle-ui-text">Thu Gọn Bảng Control</span>
       </button>
       <div class="header">
-        <h1>KIRU ĐẸP TRAI</h1>
+        <h1>YUNO BABYBUU</h1>
         <div>${statusBadge}</div>
       </div>
       <div class="container" id="main-dashboard">
@@ -471,6 +478,11 @@ app.get('/', (req, res) => {
               ${renderToggleBtn('skill2', 'Kỹ Năng 2')}
               ${renderToggleBtn('skill3', 'Kỹ Năng 3')}
             </div>
+            <div class="btn-group-responsive" style="margin-top: 10px;">
+              ${renderToggleBtn('congphap1', 'Công Pháp 1')}
+              ${renderToggleBtn('congphap2', 'Công Pháp 2')}
+              ${renderToggleBtn('congphap3', 'Công Pháp 3')}
+            </div>
           </div>
 
           <!-- CẤU HÌNH TÀI KHOẢN & PROXY -->
@@ -495,7 +507,7 @@ app.get('/', (req, res) => {
 
           <div class="card">
             <h3>Nhật Ký Nhắc Tên [${BOT_USERNAME}]</h3>
-            <div class="kiru-box">
+            <div class="mention-box">
               ${botMentionLogs.length > 0 ? botMentionLogs.map(function(k) { return "<div>[" + k.time + "] " + k.text + "</div>"; }).join('') : '<i>Chưa có tin nhắn nào...</i>'}
             </div>
           </div>
@@ -533,6 +545,10 @@ function stopFeatureLoops() {
   if (attackLeftInterval) { clearInterval(attackLeftInterval); attackLeftInterval = null; }
   if (attackRightInterval) { clearInterval(attackRightInterval); attackRightInterval = null; }
   if (skillLoopInterval) { clearInterval(skillLoopInterval); skillLoopInterval = null; }
+  Object.keys(skillIntervals).forEach(key => {
+    if (skillIntervals[key]) clearInterval(skillIntervals[key]);
+    delete skillIntervals[key];
+  });
   if (hotbarLoopInterval) { clearInterval(hotbarLoopInterval); hotbarLoopInterval = null; }
 }
 
@@ -567,15 +583,24 @@ function restartLoops() {
       }
     }, attackRightIntervalMs);
   }
-  if (toggles.skill1 || toggles.skill2 || toggles.skill3) {
-    skillLoopInterval = setInterval(() => {
-      if (bot && bot.entity && bot._client && !isManualStopped) {
-        if (toggles.skill1) safeChat('/kinang_1');
-        if (toggles.skill2) safeChat('/kinang_2');
-        if (toggles.skill3) safeChat('/kinang_3');
+  // Mỗi kỹ năng có chu kỳ riêng theo thời gian hồi chiêu đã yêu cầu.
+  const skillSchedules = [
+    { key: 'skill1', command: '/kinang_1', intervalMs: 20 * 1000 },
+    { key: 'skill2', command: '/kinang_2', intervalMs: 35 * 1000 },
+    { key: 'skill3', command: '/kinang_3', intervalMs: 35 * 1000 },
+    { key: 'congphap1', command: '/fightingskill_1', intervalMs: 20 * 1000 },
+    { key: 'congphap2', command: '/fightingskill_2', intervalMs: 35 * 1000 },
+    { key: 'congphap3', command: '/fightingskill_3', intervalMs: 121 * 1000 }
+  ];
+
+  skillSchedules.forEach(({ key, command, intervalMs }) => {
+    if (!toggles[key]) return;
+    skillIntervals[key] = setInterval(() => {
+      if (toggles[key] && bot && bot.entity && bot._client && bot._client.state === 'play' && !isManualStopped) {
+        safeChat(command);
       }
-    }, 10000);
-  }
+    }, intervalMs);
+  });
 
   const activeSlots = hotbarEnabled.map((enabled, idx) => enabled ? idx : -1).filter(idx => idx !== -1);
   if (activeSlots.length === 1) {
@@ -671,6 +696,8 @@ function executeActiveFeaturesOnSpawn() {
 
 function createBot() {
   if (isManualStopped) return;
+  // Một kết nối mới bắt đầu; bỏ trạng thái khóa của lần reconnect trước.
+  isReconnecting = false;
   cleanupBot();
   isFirstSpawn = true;
   lastTimeAge = 0;
@@ -810,7 +837,12 @@ function createBot() {
       }, 5000);
 
       watchdogInterval = setInterval(() => {
-        if (!bot || isManualStopped) return;
+        if (isManualStopped) return;
+        if (!bot || !bot._client || bot._client.state !== 'play') {
+          addErrorLog('Watchdog', 'Phát hiện bot không còn ở trạng thái trong game. Đang kết nối lại...');
+          handleReconnect();
+          return;
+        }
         if (!isAutoActionRunning || Date.now() - lastActionTime > 20000) scheduleNextAction();
 
         if (bot.time) {
@@ -871,6 +903,8 @@ function createBot() {
   bot.on('error', (err) => {
     stopFeatureLoops();
     addErrorLog('Mineflayer Error', err.message || err.toString());
+    // Chỉ reconnect ngay khi socket đã đóng; lỗi đơn lẻ khi vẫn online chờ event end/watchdog.
+    if (!isManualStopped && (!bot || !bot._client || bot._client.state !== 'play')) handleReconnect();
   });
 
   bot.on('kicked', (reason) => {
@@ -920,5 +954,3 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   addErrorLog('Unhandled Rejection', String(reason));
 });
-
-
